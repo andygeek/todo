@@ -2,6 +2,8 @@
 
 > **This project was 100% created using AI** (Claude Code by Anthropic).
 
+**Live demo:** [andygeek-todo.vercel.app](https://andygeek-todo.vercel.app)
+
 Local-first task manager. All data is stored in the browser using IndexedDB, no server or account required.
 
 ## Stack
