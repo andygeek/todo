@@ -1,6 +1,6 @@
 # Todo App
 
-> **This project was 100% created using AI** (Claude Code by Anthropic).
+> **This project was 100% created using AI.**
 
 **Live demo:** [andygeek-todo.vercel.app](https://andygeek-todo.vercel.app)
 
