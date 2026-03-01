@@ -21,6 +21,8 @@ export default function Home() {
   const [undoState, setUndoState] = useState<UndoState>({ type: null, item: null });
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState('');
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [todoDraft, setTodoDraft] = useState('');
 
   const refreshProjects = async () => {
     try {
@@ -145,6 +147,11 @@ export default function Home() {
 
     if (!todoToDelete) return;
 
+    if (editingTodoId === id) {
+      setEditingTodoId(null);
+      setTodoDraft('');
+    }
+
     setTodos((prev) => prev.filter((todo) => todo.id !== id));
     setUndoState({ type: 'todo', item: todoToDelete });
 
@@ -220,9 +227,97 @@ export default function Home() {
     }
   };
 
+  const startTodoEdit = (todo: Todo) => {
+    setEditingTodoId(todo.id);
+    setTodoDraft(todo.text);
+  };
+
+  const cancelTodoEdit = () => {
+    setEditingTodoId(null);
+    setTodoDraft('');
+  };
+
+  const saveTodoEdit = async (todoId: string, originalText: string) => {
+    const trimmed = todoDraft.trim();
+
+    if (!trimmed || trimmed === originalText) {
+      cancelTodoEdit();
+      return;
+    }
+
+    setTodos((prev) =>
+      prev.map((todo) => (todo.id === todoId ? { ...todo, text: trimmed } : todo)),
+    );
+    cancelTodoEdit();
+
+    try {
+      await db.todos.update(todoId, { text: trimmed });
+    } catch (error) {
+      console.error('Error updating todo text in IndexedDB:', error);
+      await refreshTodos();
+    }
+  };
+
   const selectedProject = selectedProjectId
     ? projects.find((p) => p.id === selectedProjectId)
     : null;
+
+  const renderTodoItem = (todo: Todo) => {
+    const isEditing = editingTodoId === todo.id;
+
+    return (
+      <div key={todo.id} className="flex items-start gap-4 group text-xl todo-item">
+        <CustomCheckbox
+          checked={todo.completed}
+          onChange={() => void toggleComplete(todo.id, todo.completed)}
+        />
+
+        {isEditing ? (
+          <input
+            type="text"
+            value={todoDraft}
+            onChange={(e) => setTodoDraft(e.target.value)}
+            onBlur={() => {
+              void saveTodoEdit(todo.id, todo.text);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void saveTodoEdit(todo.id, todo.text);
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelTodoEdit();
+              }
+            }}
+            className={`flex-1 leading-relaxed bg-transparent border-none outline-none focus:outline-none ${
+              todo.completed ? 'text-gray-400' : 'text-black'
+            }`}
+            autoFocus
+          />
+        ) : (
+          <span
+            className={`flex-1 leading-relaxed todo-text cursor-text ${
+              todo.completed ? 'completed' : ''
+            }`}
+            onClick={() => startTodoEdit(todo)}
+            title="Clic para editar"
+          >
+            {todo.text}
+          </span>
+        )}
+
+        <button
+          onClick={() => void deleteTodo(todo.id)}
+          className="opacity-60 hover:opacity-100 text-gray-400 hover:text-black transition-opacity text-2xl leading-none mt-0.5 delete-btn"
+          aria-label="Eliminar tarea"
+          title="Eliminar tarea"
+        >
+          ×
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -332,29 +427,7 @@ export default function Home() {
               {todos.length === 0 ? (
                 <p className="text-gray-400 text-xl">No hay tareas aún</p>
               ) : (
-                todos.map((todo) => (
-                  <div key={todo.id} className="flex items-start gap-4 group text-xl todo-item">
-                    <CustomCheckbox
-                      checked={todo.completed}
-                      onChange={() => void toggleComplete(todo.id, todo.completed)}
-                    />
-                    <span
-                      className={`flex-1 leading-relaxed todo-text ${
-                        todo.completed ? 'completed' : ''
-                      }`}
-                    >
-                      {todo.text}
-                    </span>
-                    <button
-                      onClick={() => void deleteTodo(todo.id)}
-                      className="opacity-60 hover:opacity-100 text-gray-400 hover:text-black transition-opacity text-2xl leading-none mt-0.5 delete-btn"
-                      aria-label="Eliminar tarea"
-                      title="Eliminar tarea"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))
+                todos.map((todo) => renderTodoItem(todo))
               )}
             </div>
           ) : (
@@ -371,29 +444,7 @@ export default function Home() {
                       <div key={project.id} className="space-y-3">
                         <h2 className="text-2xl font-semibold text-black">{project.name}</h2>
                         <div className="space-y-2 pl-2">
-                          {projectTodos.map((todo) => (
-                            <div key={todo.id} className="flex items-start gap-4 group text-xl todo-item">
-                              <CustomCheckbox
-                                checked={todo.completed}
-                                onChange={() => void toggleComplete(todo.id, todo.completed)}
-                              />
-                              <span
-                                className={`flex-1 leading-relaxed todo-text ${
-                                  todo.completed ? 'completed' : ''
-                                }`}
-                              >
-                                {todo.text}
-                              </span>
-                              <button
-                                onClick={() => void deleteTodo(todo.id)}
-                                className="opacity-60 hover:opacity-100 text-gray-400 hover:text-black transition-opacity text-2xl leading-none mt-0.5 delete-btn"
-                                aria-label="Eliminar tarea"
-                                title="Eliminar tarea"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
+                          {projectTodos.map((todo) => renderTodoItem(todo))}
                         </div>
                       </div>
                     );
@@ -405,29 +456,7 @@ export default function Home() {
                       <div className="space-y-2 pl-2">
                         {todos
                           .filter((todo) => !todo.project_id)
-                          .map((todo) => (
-                            <div key={todo.id} className="flex items-start gap-4 group text-xl todo-item">
-                              <CustomCheckbox
-                                checked={todo.completed}
-                                onChange={() => void toggleComplete(todo.id, todo.completed)}
-                              />
-                              <span
-                                className={`flex-1 leading-relaxed todo-text ${
-                                  todo.completed ? 'completed' : ''
-                                }`}
-                              >
-                                {todo.text}
-                              </span>
-                              <button
-                                onClick={() => void deleteTodo(todo.id)}
-                                className="opacity-60 hover:opacity-100 text-gray-400 hover:text-black transition-opacity text-2xl leading-none mt-0.5 delete-btn"
-                                aria-label="Eliminar tarea"
-                                title="Eliminar tarea"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
+                          .map((todo) => renderTodoItem(todo))}
                       </div>
                     </div>
                   )}
