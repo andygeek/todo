@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-serif: var(--font-garamond);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-garamond), serif;
+}
+
+/* Checkbox personalizado estilo garabato */
+.custom-checkbox-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: 0.125rem;
+  user-select: none;
+  outline: none;
+  transition: transform 0.2s ease;
+}
+
+.custom-checkbox-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.custom-checkbox-wrapper:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.1);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.custom-checkbox-square {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.custom-checkbox-box {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.custom-checkbox-box rect {
+  transition: stroke 0.2s ease;
+}
+
+.custom-checkbox-wrapper:hover .custom-checkbox-box rect {
+  stroke: #9ca3af;
+}
+
+.custom-checkbox-check {
+  position: absolute;
+  left: -8px;
+  top: -6px;
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+}
+
+/* Animación suave para el texto completado */
+.todo-text {
+  transition: all 0.3s ease-in-out;
+}
+
+.todo-text.completed {
+  color: #9ca3af;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #9ca3af;
+}
+
+/* Animación para el item completo */
+.todo-item {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Mejora del botón de eliminar */
+.delete-btn {
+  transition: all 0.2s ease-in-out;
+  font-weight: 300;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
